@@ -18,6 +18,7 @@ Fractal.sln
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 *.frac
+*.exe
 # Mono auto generated files
 mono_crash.*
 
