@@ -11,6 +11,10 @@
 *.sln.docstates
 *.bmp
 Fractal.sln
+*.o
+*.h.gch
+*.vcxproj
+*.filters
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 *.frac
