@@ -13,7 +13,7 @@
 *.sln
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
-
+*.frac
 # Mono auto generated files
 mono_crash.*
 
