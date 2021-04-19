@@ -8,7 +8,7 @@ Then the user can issue a render command that could render the current area into
 
 ### Basic Usage
 The application has almost complete functionality in console mode, with just a few settings
-that can only be set by hard-coded into the main.cpp file. Future updates will expand
+that can only be set by being hard-coded into the main.cpp file. Future updates will expand
 console mode functionality.
 
 ### Compile Instructions
@@ -16,9 +16,9 @@ A compiler equivalent to g++ is required to compile/build. The project can also
 be loaded into Visual Studio, however the user will have to do this manually.
 To compile, open a terminal in the src/ directory, and type:
 <br> `make` <br>
-This uses the provided makefile to compile the project includeing all dependancies.
+This uses the provided makefile to compile the project including all dependancies.
 
-The build .exe application should also be included in each commit.
+The build .exe application should also be included in each major commit.
 
 ## Console Mode
 ### Commands
