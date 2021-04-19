@@ -541,8 +541,9 @@ bool FractalView::handleInput(std::string input, float* centerx, float* centery)
 		}
 		else if (input == "help")
 		{
-			std::cout << "Commands: up down left right zoom zoomo load" <<
-				"save exit help mandelbrot julia juliaset setsize" << std::endl;
+			std::cout << "Commands: up down left right zoom zoomo load" << std::endl <<
+				"save exit help mandelbrot julia juliaset setsize interations" << std::endl <<
+				"sweep home" << std::endl;
 			std::cin >> input;
 		}
 		else if (input == "mandelbrot")
@@ -633,15 +634,16 @@ bool FractalView::handleInput(std::string input, float* centerx, float* centery)
 			setWindowCenter(x, -y, 2 * zoom, zoom);
 			done = true;
 		}
-		else if (input == "exit")
+		else if (input == "exit" || input == "quit")
 		{
 			return false;
 		}
 		else
 		{
 			std::cout << "Invalid command. Commands are: " << std::endl <<
-			 "Commands: up down left right zoom zoomo load" <<
-			"save exit help mandelbrot julia juliaset setsize iterations sweep" << std::endl;
+			"Commands: up down left right zoom zoomo load" << std::endl <<
+			"save exit help mandelbrot julia juliaset setsize interations" << std::endl <<
+			"sweep home" << std::endl;
 			std::cin >> input;
 		}
 
