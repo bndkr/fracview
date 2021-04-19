@@ -32,7 +32,7 @@ The following commands are currently supported:
  Zooms in / out respectively from the center of the screen.
  - help:
  Prints all of the currently supported commands
- - exit:
+ - exit / quit:
  Exits the program
  - save:
  Saves the current window location into a .frac file. This encodes the information required
