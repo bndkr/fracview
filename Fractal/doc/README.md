@@ -67,6 +67,6 @@ Loads an existing .frac file of the name `name`. returns true if the file is fou
 ### void enterConsoleMode()
 Uses the console to display fractal images. Upon calling this method, the program will remain in console mode
 until the uses types the commands `exit` or `quit`. Console mode is a 'viewfinder' that quickly locates an 
-area with features the user wants to fully render. see [README.md](../README.md) for a comprehensive command 
+area with features the user wants to fully render. see [README.md](../../README.md) for a comprehensive command 
 list.
 
