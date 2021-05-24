@@ -73,4 +73,8 @@ public:
 			(real * imaginary) * 2
 		);
 	}
+	float distanceFromOrigin()
+	{
+		return sqrt(real * real + imaginary * imaginary);
+	}
 };

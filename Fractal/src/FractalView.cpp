@@ -10,8 +10,6 @@ FractalView::FractalView()
 	total_pixels = image_height * image_height;
 	max_iterations = 100;
 
-	
-
 	// set window variables with defaults
 	x_min = -2.0f;
 	x_max = 2.0f;
@@ -28,9 +26,9 @@ FractalView::FractalView()
 	// initialize the color palette (default is black -> white)
 	for (int i = 0; i < colors; i++)
 	{
-		this->palette[i * 3] = i * 3 * (256.0f / 300.0f);
-		this->palette[i * 3 + 1] = i * 3 * (256.0f / 300.0f);
-		this->palette[i * 3 + 2] = i * 3 * (256.0f / 300.0f);
+		this->palette[i * 3] = i * 3 * (256.0f / colors);
+		this->palette[i * 3 + 1] = i * 3 * (256.0f / colors);
+		this->palette[i * 3 + 2] = i * 3 * (256.0f / colors);
 	}
 	return;
 }
@@ -69,31 +67,11 @@ void FractalView::setImageSize(int width, int height)
 	this->total_pixels = height * width;
 }
 
-std::ofstream* FractalView::create_Header(int width, int height)
+std::ofstream* FractalView::create_Header(int width, int height, std::string filename)
 {
 	// create the file object stream and set up the buffer.
 	std::ofstream* file;
-	if (currentFractal == Fractal::Mandelbrot)
-	{
-		file = new std::ofstream
-		("mandelbrot.bmp", std::ios::out | std::ios::binary);
-	}
-	else if (currentFractal == Fractal::Julia)
-	{
-		file = new std::ofstream
-		("julia.bmp", std::ios::out | std::ios::binary);
-	}
-	else if (currentFractal == Fractal::Ship)
-	{
-		file = new std::ofstream
-		("ship.bmp", std::ios::out | std::ios::binary);
-	}
-	else
-	{
-		file = new std::ofstream
-		("unknownfractal.bmp", std::ios::out | std::ios::binary);
-	}
-
+	file = new std::ofstream(filename + ".bmp", std::ios::out | std::ios::binary);
 	int total_pixels = width * height;
 	/*-------BMP HEADER--------*/
 	char id_field[2] = { 66, 77 }; // ascii: "BM" for bitmap
@@ -172,8 +150,7 @@ std::ofstream* FractalView::create_Header(int width, int height)
 	return file;
 }
 
-
-bool FractalView::drawFractal(DrawMode mode = DrawMode::File)
+bool FractalView::drawFractal(DrawMode mode = DrawMode::File, std::string filename = "unknown")
 {
 	if (mode == DrawMode::Console)
 	{
@@ -186,7 +163,7 @@ bool FractalView::drawFractal(DrawMode mode = DrawMode::File)
 		{
 			for (int j = 0; j < c_sizex; j++) // j == x
 			{
-				if (colorPixel(j, i) == -1)
+				if (colorPixel(j, i) == -1.0f)
 				{
 					drawer.colorPixel(j, c_sizey - i, 0);
 				}
@@ -213,7 +190,7 @@ bool FractalView::drawFractal(DrawMode mode = DrawMode::File)
 	std::cout << std::endl;
 	
 	// grab the file pointer so we can continue printing to the binary file
-	std::ofstream* file = create_Header(image_width, image_height);
+	std::ofstream* file = create_Header(image_width, image_height, filename);
 
 	// now we begin writing the pixel data of the image to the file.
 	if (currentFractal == Fractal::Mandelbrot)
@@ -232,9 +209,10 @@ bool FractalView::drawFractal(DrawMode mode = DrawMode::File)
 	//int t = std::time(NULL);
 
 	// now the progress bar. there will be 40 steps.
-	int divider = image_height / 40; // roughly the number of lines per step
+	int steps = 40;
+	int divider = image_height / steps; // roughly the number of lines per step
 	int plusses = 0;
-	int minuses = 40; // we begin with no progress done
+	int minuses = steps; // we begin with no progress done
 	
 	for (int y = 0; y < image_height; y++)
 	{
@@ -247,7 +225,7 @@ bool FractalView::drawFractal(DrawMode mode = DrawMode::File)
 			std::cout << "Progress:  ";
 
 			plusses++;
-			minuses = 40 - plusses;
+			minuses = steps - plusses;
 			std::cout << "[";
 			// for every plus, print a hash
 			for (int i = 0; i < plusses; i++)
@@ -266,15 +244,56 @@ bool FractalView::drawFractal(DrawMode mode = DrawMode::File)
 		for (int x = 0; x < image_width; x++)
 		{
 			int color = -1;
-			color = (colorPixel(x, y) % colors) * 3;
+			float gradient = colorPixel(x, y); // the color number
+			int step = (int)gradient; // step is the last color step in the palette to add gradient too
+			gradient = gradient - step; // how 'inbetween' the color is.
+			step = step % colors;
+
+			int blue = palette[step * 3];
+			int green = palette[step * 3 + 1];
+			int red = palette[step * 3 + 2];
+
+			// we have to normalize the rgb values to ranges from 0 - 255 to work properly.
+			if (blue < 0) blue += 256;
+			if (green < 0) green += 256;
+			if (red < 0) red += 256;
+
+			int bluediff = palette[((step + 1) * 3) % (colors * 3)];
+			int greendiff = palette[((step + 1) * 3 + 1) % (colors * 3)];
+			int reddiff = palette[((step + 1) * 3 + 2) % (colors * 3)];
+
+			if (bluediff < 0) bluediff += 256;
+			if (greendiff < 0) greendiff += 256;
+			if (reddiff < 0) reddiff += 256;
+
+			// with all relevant colors normalized, we can now add the gradient
+			blue = blue + (bluediff - blue) * gradient;
+			green = green + (greendiff - green) * gradient;
+			red = red + (reddiff - red) * gradient;
+
+			// before we print the color to the file, we need to revert the normalization we did before.
+			if (blue > 127) blue -= 256;
+			if (green > 127) green -= 256;
+			if (red > 127) red -= 256;
+
+			if (bluediff > 127) bluediff -= 256;
+			if (greendiff > 127) greendiff -= 256;
+			if (reddiff > 127) reddiff -= 256;
+
+
 			// if the point is inside the set, color it appropriatly.
-			if (color == -1)
+			if (gradient == -1.0f)
 			{
 				file->write(inner_color, 3);
 			}
 			else // otherwise, color it acording to the palette.
 			{
-				file->write(&palette[color], 3);
+				char realblue = char(blue);
+				char realgreen = char(green);
+				char realred = char(red);
+				file->write(&realblue, 1);
+				file->write(&realgreen, 1);
+				file->write(&realred, 1);
 			}
 		}
 	}
@@ -341,19 +360,19 @@ void FractalView::setGradientColors(int begin_color, int end_color)
 		// blue channel
 		palette[i * 3] = (((half - i) / half) * blue_begin) +
 			((i / half) * blue_end);
-		palette[299 - (i * 3 + 2)] = (((half - i) / half) * blue_begin) +
+		palette[(colors - 1) - (i * 3 + 2)] = (((half - i) / half) * blue_begin) +
 			((i / half) * blue_end);
 
 		// green channel
 		palette[i * 3 + 1] = (((half - i) / half) * green_begin) +
 			((i / half) * green_end);
-		palette[299 - (i * 3 + 1)] = (((half - i) / half) * green_begin) +
+		palette[(colors - 1) - (i * 3 + 1)] = (((half - i) / half) * green_begin) +
 			((i / half) * green_end);
 
 		// red channel
 		palette[i * 3 + 2] = (((half - i) / half) * red_begin) +
 			((i / half) * red_end);
-		palette[299 - (i * 3)] = (((half - i) / half) * red_begin) +
+		palette[(colors - 1) - (i * 3)] = (((half - i) / half) * red_begin) +
 			((i / half) * red_end);
 	}
 }
@@ -369,20 +388,37 @@ void FractalView::setGradientColors(int color1, int color2, int color3)
 		return;
 	}
 
-	// we'll do this one color at a time.
-	float third = colors / 3;
+	float third = colors / 3; // 33? there are 100 total colors, with 300 data values
 
 	// blue channel
 	int blue1 = color1 & 0x0000ff;
 	int blue2 = color2 & 0x0000ff;
 	int blue3 = color3 & 0x0000ff;
 
-	for (int i = 0; i < colors; i++)
+	// green channel
+	int green1 = (color1 & 0x00ff00) >> 8;
+	int green2 = (color2 & 0x00ff00) >> 8;
+	int green3 = (color3 & 0x00ff00) >> 8;
+
+	// red channel
+	int red1 = (color1 & 0xff0000) >> 16;
+	int red2 = (color2 & 0xff0000) >> 16;
+	int red3 = (color3 & 0xff0000) >> 16;
+	int i = 0;
+	// interpolate between the first and second colors
+	for (i; i < third; i++) // third is 33 for now
 	{
-		if (i < 66)
-		{
-			palette[i * 3] = blue1 * (i);
-		}
+		palette[i * 3] = blue1 * ((third - i) / third) + blue2 * (i / third);
+		palette[i * 3 + 1] = green1 * ((third - i) / third) + green2 * (i / third);
+		palette[i * 3 + 2] = red1 * ((third - i) / third) + red2 * (i / third);
+
+		palette[i * 3 + colors] = blue2 * ((third - i) / third) + blue3 * (i / third);
+		palette[i * 3 + 1 + colors] = green2 * ((third - i) / third) + green3 * (i / third);
+		palette[i * 3 + 2 + colors] = red2 * ((third - i) / third) + red3 * (i / third);
+
+		palette[i * 3 + colors * 2] = blue3 * ((third - i) / third) + blue1 * (i / third);
+		palette[i * 3 + 1 + colors * 2] = green3 * ((third - i) / third) + green1 * (i / third);
+		palette[i * 3 + 2 + colors * 2] = red3 * ((third - i) / third) + red1 * (i / third);
 	}
 
 }
@@ -447,7 +483,7 @@ bool FractalView::getWindowSettings(std::string name)
 	file.close();
 	return true;
 }
-
+// TODO: fix the pointers going into handleInput()
 void FractalView::enterConsoleMode()
 {
 	std::string input;
@@ -461,13 +497,28 @@ void FractalView::enterConsoleMode()
 		centerx = (x_max + x_min) / 2;
 		centery = (y_max + y_min) / 2;
 
-		drawFractal(DrawMode::Console);
+		drawFractal(DrawMode::Console, "");
 		std::cout << "x: " << centerx << "  y: " << centery << "  zoom: " << x_max - centerx << "  Command: ";
 		std::cin >> input;
 		if (!this->handleInput(input, &centerx, &centery))
 		{
 			break;
 		}
+	}
+}
+
+void FractalView::printPalette()
+{
+	for (int i = 0; i < colors; i++)
+	{
+		std::cout << std::dec << " COLOR " << i << std::hex << "  ";
+		std::cout << "r: " <<  ((int) palette[i * 3 + 2]  & 0xff) << "   ";
+		std::cout << "g: " <<  ((int) palette[i * 3 + 1]  & 0xff) << "   ";
+		std::cout << "b: " <<  ((int) palette[i * 3]      & 0xff) << "   " << std::endl;
+	}
+	for (int i = 0; i < 35; i++)
+	{
+		std::cout << std::endl;
 	}
 }
 
@@ -556,14 +607,21 @@ bool FractalView::handleInput(std::string input, float* centerx, float* centery)
 			currentFractal = Fractal::Julia;
 			done = true;
 		}
-		else if (input == "ship") 
+		else if (input == "ship")
 		{
 			currentFractal = Fractal::Ship;
 			done = true;
 		}
 		else if (input == "print")
 		{
-			drawFractal(DrawMode::File);
+			std::cout << "Enter Filename: ";
+			std::string filename;
+			std::cin >> filename;
+			if (filename.empty())
+			{
+				filename = "unknown";
+			}
+			drawFractal(DrawMode::File, filename);
 			std::cout << "Press enter to continue: " << std::endl;
 			std::cin.get();
 			std::cin.get();
@@ -619,7 +677,7 @@ bool FractalView::handleInput(std::string input, float* centerx, float* centery)
 			{
 				sweepstate += step;
 				setMaxIterations(sweepstate);
-				drawFractal(DrawMode::Console);
+				drawFractal(DrawMode::Console, "");
 				if (sweepstate >= upper)
 				{
 					done = true;
@@ -629,9 +687,28 @@ bool FractalView::handleInput(std::string input, float* centerx, float* centery)
 		}
 		else if (input == "home")
 		{
-			float zoom = 4;
-			float x = -1.5f, y = 0.0f;
-			setWindowCenter(x, -y, 2 * zoom, zoom);
+			if (currentFractal == Fractal::Julia || currentFractal == Fractal::Ship)
+			{
+				setWindowCenter(0, 0, 4, 2);
+			}
+			else
+			{
+				float zoom = 4;
+				float x = -1.5f, y = 0.0f;
+				setWindowCenter(x, -y, 2 * zoom, zoom);
+			}
+			done = true;
+		}
+		else if (input == "palette")
+		{
+		std::cout << "how many steps?" << std::endl;
+			int steps = -1;
+			while (steps > 5 || steps < 0)
+			{
+				std::cout << "enter a number between 1 and 4" << std::endl;
+				std::cin >> steps;
+			}
+			// perform the color linear interpolation. Ive got one step figured out.
 			done = true;
 		}
 		else if (input == "exit" || input == "quit")
@@ -652,7 +729,7 @@ bool FractalView::handleInput(std::string input, float* centerx, float* centery)
 	return true;
 }
 
-int FractalView::colorPixel(int a, int b)
+float FractalView::colorPixel(int a, int b)
 {
 	// the pixel we're testing
 	Complex z(a, b);
@@ -663,16 +740,21 @@ int FractalView::colorPixel(int a, int b)
 	if (currentFractal == Fractal::Julia)
 	{
 		Complex z(a, b);
+		Complex temp(a, b);
 		// scale the coordinate to the real / imaginary space
 		z.real = x_min + (a * (x_max - x_min) / image_width);
 		z.imaginary = (y_min + (b * (y_max - y_min) / image_height));
 		Complex c(julia_x, julia_y);
 
+		temp.real = z.real;
+		temp.imaginary = z.imaginary;
 		int iteration = 0;
 		while ((z.real * z.real) + (z.imaginary * z.imaginary)
 			< 4 && iteration < max_iterations)
 		{
 			// iterate the function
+			temp.real = z.real;
+			temp.imaginary = z.imaginary;
 			z = (z * z) + c;
 			iteration++;
 		}
@@ -683,12 +765,17 @@ int FractalView::colorPixel(int a, int b)
 		}
 		// otherwise, just return the number of iterations it took to escape
 		// and we'll paint it accordingly.
-		return iteration;
+		float min = temp.distanceFromOrigin();
+		float max = z.distanceFromOrigin();
+		float gradient = (2 - min) / (max - min);
+
+		return iteration + gradient;
 	}
 	else if (currentFractal == Fractal::Mandelbrot)
 	{
 		// the pixel we're testing
 		Complex z(0, 0);
+		Complex temp(0, 0);
 		Complex c(x_min + (a * (x_max - x_min) / image_width),
 			(y_min + (b * (y_max - y_min) / image_height)));
 		// scale the coordinate to the real / imaginary space
@@ -698,22 +785,29 @@ int FractalView::colorPixel(int a, int b)
 			< 4 && iteration < max_iterations)
 		{
 			// iterate the function
+			temp.real = z.real;
+			temp.imaginary = z.imaginary;
 			z = (z * z) + c;
 			iteration++;
 		}
 		if (iteration == max_iterations)
 		{
 			// if the point is part of the set, paint it the inner color
-			return -1;
+			return -1.0f;
 		}
 		// otherwise, just return the number of iterations it took to escape
 		// and we'll paint it accordingly.
-		return iteration;
+		float min = temp.distanceFromOrigin();
+		float max = z.distanceFromOrigin();
+		float gradient = (2 - min) / (max - min);
+
+		return iteration + gradient;
 	}
 	else if (currentFractal == Fractal::Ship)
 	{
 		// the pixel we're testing
 		Complex z(0, 0);
+		Complex temp(0, 0);
 		Complex c(x_min + (a * (x_max - x_min) / image_width),
 			(y_min + (b * (y_max - y_min) / image_height)));
 		// scale the coordinate to the real / imaginary space
@@ -724,6 +818,8 @@ int FractalView::colorPixel(int a, int b)
 			< 4 && iteration < max_iterations)
 		{
 			// iterate the function
+			temp.real = z.real;
+			temp.imaginary = z.imaginary;
 			z = (z.abs().square()) + c;
 			iteration++;
 		}
@@ -734,7 +830,11 @@ int FractalView::colorPixel(int a, int b)
 		}
 		// otherwise, just return the number of iterations it took to escape
 		// and we'll paint it accordingly.
-		return iteration;
+		float min = temp.distanceFromOrigin();
+		float max = z.distanceFromOrigin();
+		float gradient = (2 - min) / (max - min);
+
+		return iteration + gradient;
 	}
 	else
 	{

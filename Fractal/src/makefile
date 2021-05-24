@@ -1,8 +1,8 @@
 FractalView: Complex.o ConsoleDrawer.o FractalView.o main.o
 	g++ -o fractal Complex.o ConsoleDrawer.o FractalView.o main.o
 
-Complex.o: Complex.h Complex.cpp
-	g++ -c Complex.h Complex.cpp
+Complex.o: Complex.h 
+	g++ -c Complex.h 
 
 ConsoleDrawer.o: ConsoleDrawer.h ConsoleDrawer.cpp
 	g++ -c ConsoleDrawer.h ConsoleDrawer.cpp

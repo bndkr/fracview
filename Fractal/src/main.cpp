@@ -1,13 +1,10 @@
 #include "FractalView.h"
-#include <chrono>
-#include <time.h>
 
 int main()
 {
-
-
 	FractalView f;
-	f.setGradientColors(0x000000, 0xff0000);
+	f.setGradientColors(0xffffff, 0xff0000, 0x0000ff);
+	f.printPalette();
+
 	f.enterConsoleMode();
-	
 }
